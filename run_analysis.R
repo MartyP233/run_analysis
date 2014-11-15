@@ -1,56 +1,62 @@
+#This code will work if the samsung data is stored in your working
+# directory, in the folder UCI HAR Dataset.
 
-# Read in the testdata and labels
-testdata <- read.table('UCI HAR Dataset/test/x_test.txt')
+# *Caution* this syntax contains code to clear the workspace except for the
+# main dataset, i.e. this will clear your workspace if you run it.
+
+# Step 1 Read in the test feature data, activity data and subject data
+testfeaturedata <- read.table('UCI HAR Dataset/test/x_test.txt')
+testactivitydata <- read.table('UCI HAR Dataset/test/y_test.txt')
+testsubjectdata <- read.table('UCI HAR Dataset/test/subject_test.txt')
+
+# Step 2 Read in the train feature data, activity data and subject data
+trainfeaturedata <- read.table('UCI HAR Dataset/train/x_train.txt')
+trainactivitydata <- read.table('UCI HAR Dataset/train/y_train.txt')
+trainsubjectdata <- read.table('UCI HAR Dataset/train/subject_train.txt')
+
+# Step 3 Read in the feature label data
 featurelabels <- read.table('UCI HAR Dataset/features.txt')
-testdataactivity <- read.table('UCI HAR Dataset/test/y_test.txt')
 
-# Read in the traindata and labels
-traindata <- read.table('UCI HAR Dataset/train/x_train.txt')
-traindataactivity <- read.table('UCI HAR Dataset/train/y_train.txt')
+# Step 4 Appropriately label the feature datasets with descriptive variable names
+names(testfeaturedata) <- featurelabels$V2
+names(trainfeaturedata) <- featurelabels$V2
 
-##Appropriately labels the data sets with descriptive variable names
-names(testdata) <- featurelabels$V2
-names(traindata) <- featurelabels$V2
+# Step 5 Appropriate name the activity & subject variable in the test & train
+# activity and subject datasets
+names(testactivitydata)[1] <- 'activity'
+names(trainactivitydata)[1] <- 'activity'
+names(testsubjectdata)[1] <- 'subject'
+names(trainsubjectdata)[1] <- 'subject'
 
-#label the activity column
-names(testdataactivity)[1] <- 'activity'
-names(traindataactivity)[1] <- 'activity'
+# Step 6 Merge the activity data with the feature data for test & train
+testdata <- cbind(testfeaturedata,testactivitydata, testsubjectdata)
+traindata <- cbind(trainfeaturedata,trainactivitydata, trainsubjectdata)
 
-# Merge the activity and test/train data together
+# Step 7 Merge the test & train data together
+alldata <- rbind(testdata, traindata)
 
-testdata2 <- cbind(testdata,testdataactivity)
-traindata2 <- cbind(traindata,traindataactivity)
-alldata <- rbind(testdata2, traindata2)
+# Step 8 Remove the precursor  datasets to clear up the workspace
+rm(list=setdiff(ls(), "alldata"))
 
-# Extracts only the measurements on the mean and standard deviation  
-##for each measurement and keeps the activity name
+# Step 9 Extract only the measurements on the mean and standard deviation  
+##for each measurement and keep the activity & subject data
 
-alldata <- alldata[ , grepl( "mean|std|activity", names(alldata))]
+alldata <- alldata[ , grepl( "mean|std|activity|subject", names(alldata))]
 
-#Uses descriptive activity names to name the activities in the data set
+#Step 10 Read in the activity labels data and use descriptive activity names 
+#to name the activities in the data set
 activitylabels <- read.table('UCI HAR Dataset/activity_labels.txt')
 
 alldata$activity <- factor(alldata$activity,
                             levels = activitylabels$V1,
                             labels = activitylabels$V2)
+rm(activitylabels)
 
-#brings in subject data and combines it with the current dataset
-
-#reads in subject data
-subjecttestdata <- read.table('UCI HAR Dataset/test/subject_test.txt')
-subjecttraindata <- read.table('UCI HAR Dataset/train/subject_train.txt')
-# combines test and train data
-subjectdata <- rbind(subjecttestdata, subjecttraindata)
-#names the variable 'subject'
-names(subjectdata)[1] <- 'subject'
-#combines the subjectdata with the rest of the data
-alldata <- cbind(alldata, subjectdata)
-
-##From the data set in step 4, creates a second, independent tidy data set with
+## Step 11 From the dataset in step 10, creates a second, independent tidy data set with
 #the average of each variable for each activity and each subject
 library(dplyr)
-seconddataset <- alldata %>%
+
+meandataset <- alldata %>%
                  group_by(activity, subject) %>%
                  summarise_each(funs(mean))
-
 
